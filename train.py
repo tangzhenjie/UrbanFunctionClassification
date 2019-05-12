@@ -4,6 +4,7 @@ from core import model
 import tensorflow as tf
 import datetime
 import numpy as np
+import math
 slim = tf.contrib.slim
 
 LOG_DIR = 'D:\\pycharm_program\\UrbanFunctionClassification\\log\\'
@@ -28,15 +29,15 @@ def train(loss_val, var_list, learning_rate):
     return train_op
 
 ##################### get the input pipline ############################
-DataGenerator = ImageDataGenerator(DATASET_DIR)
+DataGenerator = ImageDataGenerator(DATASET_DIR, mode="training")
 # get the dataset statistics
 trainset_length = DataGenerator.train_set_length
 eval_set_length = DataGenerator.eval_set_length
 print("train_set_length:%d" % trainset_length)
 print("eval_set_length:%d" % eval_set_length)
 
-TrainDataset = DataGenerator.getBatchData(batch_size=BATCHSIZE, num_classes=NUM_CLASSES, mode="training")
-EvalDataset = DataGenerator.getBatchData(batch_size=BATCHSIZE, num_classes=NUM_CLASSES, mode="inference", shuffle=False)
+TrainDataset = DataGenerator.getBatchData(batch_size=BATCHSIZE, num_classes=NUM_CLASSES)
+EvalDataset = DataGenerator.getBatchData(batch_size=BATCHSIZE, num_classes=NUM_CLASSES, shuffle=False)
 
 iterator = tf.data.Iterator.from_structure(TrainDataset.output_types, TrainDataset.output_shapes)
 next_batch = iterator.get_next()
@@ -83,7 +84,7 @@ with tf.Session() as sess:
     # 训练过程
     print("training start")
     sess.run(training_init_op)
-    train_batches_of_epoch = int(np.floor(trainset_length/BATCHSIZE))
+    train_batches_of_epoch = int(math.ceil(trainset_length/BATCHSIZE))
     for step in range(51):
         img_batch, label_batch = sess.run(next_batch)
         pre, true, _, loss_value, merge, accu = sess.run([tf.argmax(net_output, 1), tf.argmax(y, 1), train_op, loss, summary_op, accuracy], feed_dict={x: img_batch, y: label_batch})
@@ -101,7 +102,7 @@ with tf.Session() as sess:
     print("eval start")
     test_acc = 0.0
     test_count = 0
-    eval_batches_of_epoch = int(np.floor(eval_set_length/BATCHSIZE))
+    eval_batches_of_epoch = int(math.ceil(eval_set_length/BATCHSIZE))
 
     sess.run(validation_init_op)
     for tag in range(eval_batches_of_epoch):
