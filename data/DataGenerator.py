@@ -28,52 +28,57 @@ class ImageDataGenerator(object):
             self.train_txt = txt_dir + train_txt_filename
             self.eval_txt = txt_dir + eval_txt_filename
             self.dataset_dir = data_dir
-            self._get_txt_file(data_dir, train_txt_filename=self.train_txt, eval_txt_filename=self.eval_txt, ratio=ratio, mode=mode)
-            self._read_txt_file(mode)
+            self._get_txt_file(data_dir, train_txt_filename=self.train_txt, eval_txt_filename=self.eval_txt, ratio=ratio)
+            self._read_txt_file()
         elif mode == "testing":
             # 表示是测试集
             test_txt_filename = "test.txt"
             self.test_txt_filename = txt_dir + test_txt_filename
             self.dataset_dir = data_dir
-            self._get_txt_file(data_dir, test_txt_filename=self.test_txt_filename, mode=mode)
-            self._read_txt_file(mode)
+            self._get_txt_file(data_dir, test_txt_filename=self.test_txt_filename)
+            self._read_txt_file()
 
 
 
 
-    def _get_txt_file(self, data_dir, test_txt_filename=None, train_txt_filename=None, eval_txt_filename=None, ratio=None, mode=None):
+    def _get_txt_file(self, data_dir, test_txt_filename=None, train_txt_filename=None, eval_txt_filename=None, ratio=None):
+        mode = self.mode
+
         if mode == "training":
-            subdirs = os.listdir(data_dir)
+            if not os.path.exists(train_txt_filename):
+                subdirs = os.listdir(data_dir)
 
-            train_File = open(train_txt_filename, "w")
-            eval_File = open(eval_txt_filename, "w")
-            for subdir in subdirs:
-                # the category in this subdir
-                category = subdir[-1]
-                current_dir = os.path.join(data_dir, subdir)
-                current_dir_filenames = os.listdir(current_dir)
+                train_File = open(train_txt_filename, "w")
+                eval_File = open(eval_txt_filename, "w")
+                for subdir in subdirs:
+                    # the category in this subdir
+                    category = subdir[-1]
+                    current_dir = os.path.join(data_dir, subdir)
+                    current_dir_filenames = os.listdir(current_dir)
 
-                tag = math.ceil((len(current_dir_filenames) * ratio))
-                for key, file_name in enumerate(current_dir_filenames):
-                    current_file_path = os.path.join(subdir, file_name)
-                    if key >= tag:
-                        eval_File.write(current_file_path + "\t" + category + "\n")
-                    else:
-                        train_File.write(current_file_path + "\t" + category + "\n")
-            train_File.close()
-            eval_File.close()
+                    tag = math.ceil((len(current_dir_filenames) * ratio))
+                    for key, file_name in enumerate(current_dir_filenames):
+                        current_file_path = os.path.join(subdir, file_name)
+                        if key >= tag:
+                            eval_File.write(current_file_path + "\t" + category + "\n")
+                        else:
+                            train_File.write(current_file_path + "\t" + category + "\n")
+                train_File.close()
+                eval_File.close()
         elif mode == "testing":
             # 测试集
-            current_dir_filenames = os.listdir(data_dir)
-            with open(test_txt_filename, "w") as f:
-                for file_name in current_dir_filenames:
-                    AreaID = file_name.split(".")[0]
-                    f.write(file_name + "\t" + AreaID + "\n")
+            if not os.path.exists(test_txt_filename):
+                current_dir_filenames = os.listdir(data_dir)
+                with open(test_txt_filename, "w") as f:
+                    for file_name in current_dir_filenames:
+                        AreaID = file_name.split(".")[0]
+                        f.write(file_name + "\t" + AreaID + "\n")
 
 
 
-    def _read_txt_file(self, mode):
+    def _read_txt_file(self):
         """Read the content of the text file and store it into lists."""
+        mode = self.mode
         if mode == "training":
             self.train_img_paths = []
             self.train_labels = []
@@ -115,13 +120,15 @@ class ImageDataGenerator(object):
             self.train_img_paths.append(path[i])
             self.train_labels.append(labels[i])
 
-    def getBatchData(self, batch_size=None, num_classes=9,  shuffle=True, buffer_size=500):
+    def getBatchData(self, type, batch_size=None, num_classes=9,  shuffle=False, buffer_size=500):
 
         self.num_classes = num_classes
-        mode = self.mode
+
         # create dataset
-        if mode == 'training':
-            self._shuffle_lists()
+        if type == "training":
+            # 注意训练时，获取验证集时 shuffle必须是False
+            if shuffle:
+                self._shuffle_lists()
             # convert lists to TF tensor
             self.train_img_paths = convert_to_tensor(self.train_img_paths, dtype=dtypes.string)
             self.train_labels = convert_to_tensor(self.train_labels, dtype=dtypes.int32)
@@ -134,7 +141,7 @@ class ImageDataGenerator(object):
             # create a new dataset with batches of images
             data = data.repeat(None).batch(batch_size)
 
-        elif mode == 'inference':
+        elif type == 'inference':
             # convert lists to TF tensor
             self.eval_img_paths = convert_to_tensor(self.eval_img_paths, dtype=dtypes.string)
             self.eval_labels = convert_to_tensor(self.eval_labels, dtype=dtypes.int32)
@@ -146,7 +153,7 @@ class ImageDataGenerator(object):
                 data = data.shuffle(buffer_size=buffer_size)
             # create a new dataset with batches of images
             data = data.repeat(1).batch(batch_size)
-        elif mode == "testing":
+        elif type == "testing":
             # convert lists to TF tensor
             self.test_img_paths = convert_to_tensor(self.test_img_paths, dtype=dtypes.string)
             self.test_areaIDs = convert_to_tensor(self.test_areaIDs, dtype=dtypes.string)
@@ -155,7 +162,7 @@ class ImageDataGenerator(object):
             data = test_dataset.map(self._parse_function_test)
             data = data.batch(batch_size)
         else:
-            raise ValueError("Invalid mode '%s'." % (mode))
+            raise ValueError("Invalid mode '%s'." % (type))
 
 
         return data

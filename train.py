@@ -1,5 +1,5 @@
 from data.DataGenerator import ImageDataGenerator
-from core import model
+from core import resnet_v2
 
 import tensorflow as tf
 import datetime
@@ -8,7 +8,7 @@ import math
 slim = tf.contrib.slim
 
 LOG_DIR = 'D:\\pycharm_program\\UrbanFunctionClassification\\log\\'
-DATASET_DIR = "D:\\competition\\data\\train\\"
+DATASET_DIR = "D:\\competition\\data\\train\\train\\"
 CHECKPOINT_DIR = 'D:\\pycharm_program\\UrbanFunctionClassification\\checkpoint\\'
 NUM_CLASSES = 9
 BATCHSIZE = 20
@@ -36,8 +36,8 @@ eval_set_length = DataGenerator.eval_set_length
 print("train_set_length:%d" % trainset_length)
 print("eval_set_length:%d" % eval_set_length)
 
-TrainDataset = DataGenerator.getBatchData(batch_size=BATCHSIZE, num_classes=NUM_CLASSES)
-EvalDataset = DataGenerator.getBatchData(batch_size=BATCHSIZE, num_classes=NUM_CLASSES, shuffle=False)
+TrainDataset = DataGenerator.getBatchData(type="training", batch_size=BATCHSIZE, num_classes=NUM_CLASSES, shuffle=True)
+EvalDataset = DataGenerator.getBatchData(type="inference", batch_size=BATCHSIZE, num_classes=NUM_CLASSES)
 
 iterator = tf.data.Iterator.from_structure(TrainDataset.output_types, TrainDataset.output_shapes)
 next_batch = iterator.get_next()
@@ -50,9 +50,10 @@ validation_init_op = iterator.make_initializer(EvalDataset)
 x = tf.placeholder(tf.float32, shape=(None, 100, 100, 3))
 y = tf.placeholder(tf.int32, shape=(None, NUM_CLASSES))
 
-with slim.arg_scope(model.vgg_arg_scope()):
-    net_output, end_points = model.vgg_16(x, NUM_CLASSES)
-
+#with slim.arg_scope(VGG.vgg_arg_scope()):
+#    net_output, end_points = VGG.vgg_16(x, NUM_CLASSES)
+with slim.arg_scope(resnet_v2.resnet_arg_scope()):
+    net_output, end_points = resnet_v2.resnet_v2_50(x, NUM_CLASSES, is_training=True)
 
 # 训练操作
 with tf.name_scope("train"):
@@ -85,7 +86,7 @@ with tf.Session() as sess:
     print("training start")
     sess.run(training_init_op)
     train_batches_of_epoch = int(math.ceil(trainset_length/BATCHSIZE))
-    for step in range(51):
+    for step in range(train_batches_of_epoch):
         img_batch, label_batch = sess.run(next_batch)
         pre, true, _, loss_value, merge, accu = sess.run([tf.argmax(net_output, 1), tf.argmax(y, 1), train_op, loss, summary_op, accuracy], feed_dict={x: img_batch, y: label_batch})
         print("{} {} loss = {:.4f}".format(datetime.datetime.now(),step + 1, loss_value))

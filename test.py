@@ -1,5 +1,5 @@
 from data.DataGenerator import ImageDataGenerator
-from core import model
+from core import resnet_v2
 
 import tensorflow as tf
 import math
@@ -20,7 +20,7 @@ with tf.name_scope("input"):
     print("test_set_length:%d" % test_set_length)
 
 
-    TestDataset = DataGenerator.getBatchData(batch_size=BATCHSIZE)
+    TestDataset = DataGenerator.getBatchData(type="testing", batch_size=BATCHSIZE)
 
     iterator = TestDataset.make_one_shot_iterator()
     next_batch = iterator.get_next()
@@ -30,8 +30,8 @@ with tf.name_scope("input"):
 ##################### setup the network ################################
 x = tf.placeholder(tf.float32, shape=(None, 100, 100, 3))
 
-with slim.arg_scope(model.vgg_arg_scope()):
-    net_output, end_points = model.vgg_16(x, NUM_CLASSES)
+with slim.arg_scope(resnet_v2.resnet_arg_scope()):
+    net_output, end_points = resnet_v2.resnet_v2_50(x, NUM_CLASSES, is_training=False)
 
 # 评价操作
 with tf.name_scope("test"):
@@ -56,11 +56,11 @@ with tf.Session() as sess:
     print("testing start")
     test_batches_of_epoch = int(math.ceil(test_set_length/BATCHSIZE))
     result = []
-    for step in range(test_batches_of_epoch):
+    for step in range(20):
         img_batch, AreaID_batch = sess.run(next_batch)
         classIDs = sess.run(pre, feed_dict={x: img_batch})
         classID = (classIDs[0] + 1)
-        dict_result = {"AreaID": AreaID_batch[0].decode('UTF-8'), "classID": str(classID)}
+        dict_result = {"AreaID": AreaID_batch[0].decode('UTF-8'), "classID": "00" + str(classID)}
         result.append(dict_result)
     with open(result_txt_file, "w") as f:
         for item in result:
