@@ -236,7 +236,8 @@ def resnet_arg_scope(weight_decay=0.0001,
       weights_initializer=slim.variance_scaling_initializer(),
       activation_fn=activation_fn,
       normalizer_fn=slim.batch_norm if use_batch_norm else None,
-      normalizer_params=batch_norm_params):
+      normalizer_params=batch_norm_params,
+      trainable=False):
     with slim.arg_scope([slim.batch_norm], **batch_norm_params):
       # The following implies padding='SAME' for pool1, which makes feature
       # alignment easier for dense prediction tasks. This is also used in
