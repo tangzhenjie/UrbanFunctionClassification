@@ -59,8 +59,8 @@ class AlexNet(object):
         pool5 = max_pool(conv5, 3, 3, 2, 2, padding='VALID', name='pool5')
 
         # 6th Layer: Flatten -> FC (w ReLu) -> Dropout
-        flattened = tf.reshape(pool5, [-1, 6 * 6 * 256])
-        fc6 = fc(flattened, 6 * 6 * 256, 4096, name='fc6')
+        flattened = tf.reshape(pool5, [-1, 2 * 2 * 256])
+        fc6 = fc(flattened, 2 * 2 * 256, 4096, name='fc6')
         dropout6 = dropout(fc6, self.KEEP_PROB)
 
         # 7th Layer: FC (w ReLu) -> Dropout

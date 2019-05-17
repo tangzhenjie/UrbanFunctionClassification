@@ -55,7 +55,7 @@ y = tf.placeholder(tf.int32, shape=(None, NUM_CLASSES))
 #with slim.arg_scope(resnet_v2.resnet_arg_scope()):
 #    net_output, end_points = resnet_v2.resnet_v2_50(x, NUM_CLASSES, is_training=True)
 with tf.name_scope("Alexnet"):
-    skip_layer = ["fc8"]
+    skip_layer = ["fc6", "fc7", "fc8"]
     weights_path = "D:\\pycharm_program\\UrbanFunctionClassification\\alexnet_first_wights\\bvlc_alexnet.npy"
     AlexNet = Alexnet.AlexNet(x, keep_prob=0.5, num_classes=NUM_CLASSES, skip_layer=skip_layer, weights_path=weights_path)
     net_output = AlexNet.fc8
