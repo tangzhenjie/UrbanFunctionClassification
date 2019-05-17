@@ -140,9 +140,8 @@ def conv(x, filter_height, filter_width, num_filters, stride_y, stride_x, name,
 
             # Concat the convolved output together again
             conv = tf.concat(axis=3, values=output_groups)
-
         # Add biases
-        bias = tf.reshape(tf.nn.bias_add(conv, biases), conv.get_shape().as_list())
+        bias = tf.reshape(tf.nn.bias_add(conv, biases), tf.shape(conv))
 
         # Apply relu function
         relu = tf.nn.relu(bias, name=scope.name)

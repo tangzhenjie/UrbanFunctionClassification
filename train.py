@@ -1,5 +1,5 @@
 from data.DataGenerator import ImageDataGenerator
-from core import resnet_v2
+from core import Alexnet
 
 import tensorflow as tf
 import datetime
@@ -52,9 +52,13 @@ y = tf.placeholder(tf.int32, shape=(None, NUM_CLASSES))
 
 #with slim.arg_scope(VGG.vgg_arg_scope()):
 #    net_output, end_points = VGG.vgg_16(x, NUM_CLASSES)
-with slim.arg_scope(resnet_v2.resnet_arg_scope()):
-    net_output, end_points = resnet_v2.resnet_v2_50(x, NUM_CLASSES, is_training=True)
-
+#with slim.arg_scope(resnet_v2.resnet_arg_scope()):
+#    net_output, end_points = resnet_v2.resnet_v2_50(x, NUM_CLASSES, is_training=True)
+with tf.name_scope("Alexnet"):
+    skip_layer = ["fc8"]
+    weights_path = "D:\\pycharm_program\\UrbanFunctionClassification\\alexnet_first_wights\\bvlc_alexnet.npy"
+    AlexNet = Alexnet.AlexNet(x, keep_prob=0.5, num_classes=NUM_CLASSES, skip_layer=skip_layer, weights_path=weights_path)
+    net_output = AlexNet.fc8
 # 训练操作
 with tf.name_scope("train"):
     loss = get_loss(net_output, y)
@@ -75,6 +79,8 @@ with tf.Session(config=config) as sess:
     sess.run(tf.local_variables_initializer())
     sess.run(tf.global_variables_initializer())
 
+    # 获取预训练的权重
+    AlexNet.load_initial_weights(session=sess)
     # 判断有没有checkpoint
     saver = tf.train.Saver()
     ckpt = tf.train.get_checkpoint_state(CHECKPOINT_DIR)
