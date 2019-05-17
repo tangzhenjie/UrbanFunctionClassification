@@ -65,9 +65,12 @@ with tf.name_scope("eval"):
     correct_pred = tf.equal(tf.argmax(net_output, 1), tf.argmax(y, 1))
     accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 summary_op = tf.summary.merge_all()
+# 混淆矩阵
+confus_matrix = tf.confusion_matrix(tf.argmax(y, 1), tf.argmax(net_output, 1), num_classes=NUM_CLASSES, name="con_matrix")
 ##################### setup the network ################################
-
-with tf.Session() as sess:
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+with tf.Session(config=config) as sess:
     # initial variables
     sess.run(tf.local_variables_initializer())
     sess.run(tf.global_variables_initializer())
@@ -86,7 +89,7 @@ with tf.Session() as sess:
     print("training start")
     sess.run(training_init_op)
     train_batches_of_epoch = int(math.ceil(trainset_length/BATCHSIZE))
-    for step in range(train_batches_of_epoch):
+    for step in range(1):
         img_batch, label_batch = sess.run(next_batch)
         pre, true, _, loss_value, merge, accu = sess.run([tf.argmax(net_output, 1), tf.argmax(y, 1), train_op, loss, summary_op, accuracy], feed_dict={x: img_batch, y: label_batch})
         print("{} {} loss = {:.4f}".format(datetime.datetime.now(),step + 1, loss_value))
@@ -106,13 +109,16 @@ with tf.Session() as sess:
     eval_batches_of_epoch = int(math.ceil(eval_set_length/BATCHSIZE))
 
     sess.run(validation_init_op)
+    con_mat = np.ones((NUM_CLASSES, NUM_CLASSES), dtype=np.int32)
     for tag in range(eval_batches_of_epoch):
         img_batch, label_batch = sess.run(next_batch)
-        pre, true, acc = sess.run([tf.argmax(net_output, 1), tf.argmax(y, 1), accuracy], feed_dict={x: img_batch, y: label_batch})
+        pre, true, acc, con_matrix = sess.run([tf.argmax(net_output, 1), tf.argmax(y, 1), accuracy,  confus_matrix], feed_dict={x: img_batch, y: label_batch})
+        con_mat = con_mat + con_matrix
         test_acc += acc
         test_count += 1
         print("the {} time Validation Accuracy = {:.4f}".format(tag, acc))
         print(pre)
         print(true)
+        print(con_mat)
     test_acc /= test_count
     print("{} Validation Accuracy = {:.4f}".format(datetime.datetime.now(), test_acc))
