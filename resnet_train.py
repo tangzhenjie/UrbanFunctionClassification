@@ -98,7 +98,7 @@ with tf.Session(config=config) as sess:
     for epoch in range(EPOCHS):
         print("{} Epoch number: {}".format(datetime.datetime.now(), epoch + 1))
         step = 1
-        while step < train_batches_of_epoch:
+        while step <= train_batches_of_epoch:
             img_batch, label_batch = sess.run(next_batch)
             pre, true, _, loss_value, merge, accu = sess.run([tf.argmax(net_output, 1), tf.argmax(y, 1), train_op, loss, summary_op, accuracy], feed_dict={x: img_batch, y: label_batch, is_training: True})
             print("{} {} loss = {:.4f}".format(datetime.datetime.now(), step, loss_value))
