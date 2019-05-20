@@ -10,7 +10,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 slim = tf.contrib.slim
 
 LOG_DIR = 'D:\\pycharm_program\\UrbanFunctionClassification\\log\\'
-DATASET_DIR = "D:\\competition\\data\\train\\train\\"
+DATASET_DIR = "D:\\competition\\data\\train_img\\train\\"
 CHECKPOINT_DIR = 'D:\\pycharm_program\\UrbanFunctionClassification\\checkpoint\\'
 NUM_CLASSES = 9
 BATCHSIZE = 20
@@ -79,7 +79,7 @@ with tf.Session(config=config) as sess:
     sess.run(tf.global_variables_initializer())
 
     # 获取预训练的权重
-    ResNetModel.load_original_weights(weight_path=weight_path, session=sess)
+    #ResNetModel.load_original_weights(weight_path=weight_path, session=sess)
     # 判断有没有checkpoint
     saver = tf.train.Saver()
     ckpt = tf.train.get_checkpoint_state(CHECKPOINT_DIR)
@@ -98,7 +98,7 @@ with tf.Session(config=config) as sess:
     for epoch in range(EPOCHS):
         print("{} Epoch number: {}".format(datetime.datetime.now(), epoch + 1))
         step = 1
-        while step <= train_batches_of_epoch:
+        while step <= 0:
             img_batch, label_batch = sess.run(next_batch)
             pre, true, _, loss_value, merge, accu = sess.run([tf.argmax(net_output, 1), tf.argmax(y, 1), train_op, loss, summary_op, accuracy], feed_dict={x: img_batch, y: label_batch, is_training: True})
             print("{} {} loss = {:.4f}".format(datetime.datetime.now(), step, loss_value))

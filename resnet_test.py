@@ -5,9 +5,9 @@ import tensorflow as tf
 import math
 slim = tf.contrib.slim
 
-result_txt_file = "./result.txt"
-DATASET_DIR = "../test/"
-CHECKPOINT_DIR = './checkpoint/'
+result_txt_file = "result.txt"
+DATASET_DIR = "D:\\competition\\data\\test_img\\test"
+CHECKPOINT_DIR = 'D:\\pycharm_program\\UrbanFunctionClassification\\checkpoint'
 NUM_CLASSES = 9
 BATCHSIZE = 1
 
