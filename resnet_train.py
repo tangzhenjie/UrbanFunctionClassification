@@ -1,4 +1,4 @@
-from data.DataGenerator import ImageDataGenerator
+from data import DataGeneratorNew
 from core import ResNet
 
 import tensorflow as tf
@@ -30,15 +30,16 @@ def get_loss(output_concat, onehot):
 
 
 ##################### get the input pipline ############################
-DataGenerator = ImageDataGenerator(DATASET_DIR, mode="training")
+DataGenerator = DataGeneratorNew.DataGenerator()
+TrainDataset = DataGenerator.get_batch(BATCHSIZE, tag="training")
+EvalDataset = DataGenerator.get_batch(BATCHSIZE, tag="evaling")
+
 # get the dataset statistics
-trainset_length = DataGenerator.train_set_length
-eval_set_length = DataGenerator.eval_set_length
+trainset_length = 31805
+eval_set_length = 7946
 print("train_set_length:%d" % trainset_length)
 print("eval_set_length:%d" % eval_set_length)
 
-TrainDataset = DataGenerator.getBatchData(type="training", batch_size=BATCHSIZE, num_classes=NUM_CLASSES, shuffle=True)
-EvalDataset = DataGenerator.getBatchData(type="inference", batch_size=BATCHSIZE, num_classes=NUM_CLASSES)
 
 iterator = tf.data.Iterator.from_structure(TrainDataset.output_types, TrainDataset.output_shapes)
 next_batch = iterator.get_next()
@@ -93,13 +94,13 @@ with tf.Session(config=config) as sess:
 
     # 训练过程
     print("training start")
-    sess.run(training_init_op)
     train_batches_of_epoch = int(math.ceil(trainset_length/BATCHSIZE))
     for epoch in range(EPOCHS):
+        sess.run(training_init_op)
         print("{} Epoch number: {}".format(datetime.datetime.now(), epoch + 1))
         step = 1
-        while step <= 0:
-            img_batch, label_batch = sess.run(next_batch)
+        while step <= train_batches_of_epoch:
+            img_batch, visit, label_batch = sess.run(next_batch)
             pre, true, _, loss_value, merge, accu = sess.run([tf.argmax(net_output, 1), tf.argmax(y, 1), train_op, loss, summary_op, accuracy], feed_dict={x: img_batch, y: label_batch, is_training: True})
             print("{} {} loss = {:.4f}".format(datetime.datetime.now(), step, loss_value))
             print("accuracy{}".format(accu))
@@ -121,7 +122,7 @@ with tf.Session(config=config) as sess:
         sess.run(validation_init_op)
         con_mat = np.ones((NUM_CLASSES, NUM_CLASSES), dtype=np.int32)
         for tag in range(eval_batches_of_epoch):
-            img_batch, label_batch = sess.run(next_batch)
+            img_batch, visit, label_batch = sess.run(next_batch)
             pre, true, acc, con_matrix = sess.run([tf.argmax(net_output, 1), tf.argmax(y, 1), accuracy,  confus_matrix], feed_dict={x: img_batch, y: label_batch, is_training: False})
             con_mat = con_mat + con_matrix
             test_acc += acc
