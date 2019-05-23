@@ -37,7 +37,6 @@ def GetStatisticDataArray1FromVisit(train_or_eval_txt_path=None, visit_dataset_d
                     visits = F.readlines()
                     # 生成[182,24]
                     for visit in visits:
-                        #array2_index = -1
                         records = visit.split("\t")[1].split(",")
                         for record in records:
                             # 写入第一个数组并生成第二个数组的索引
@@ -69,7 +68,6 @@ def GetStatisticDataArray2FromVisit(train_or_eval_txt_path=None, visit_dataset_d
             if os.path.exists(visit_file_path):
                 # 如果存在就执行下面的语句
                 with open(visit_file_path, "r") as F:
-                    element = []
                     array2 = np.zeros(4368, dtype=np.int64)
                     visits = F.readlines()
                     # 生成[182,24]，[4368]数组内容

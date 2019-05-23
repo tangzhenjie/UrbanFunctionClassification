@@ -16,7 +16,8 @@ test_visit_dir = "D:\\pycharm_program\\UrbanFunctionClassification\\Dataset\\tes
 txt_dir = "D:\\pycharm_program\\UrbanFunctionClassification\\Dataset\\"
 tfrecord_dir = "D:\\pycharm_program\\UrbanFunctionClassification\\Dataset\\"
 mat_dir = "D:\\pycharm_program\\UrbanFunctionClassification\\Dataset\\"
-IMAGENET_MEAN = tf.constant([123.68, 116.779, 103.939], dtype=tf.float64)
+IMAGENET_MEAN = tf.constant([123.68, 116.779, 103.939], dtype=tf.float32)
+NUM_CLASSES = 9             # 数据集类别数用于生成one_hot数据
 #########生成feature方法##########
 def _bytes_feature(value):
   return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
@@ -39,16 +40,18 @@ def _tf_record_parser(record):
         'label': tf.FixedLenFeature([], tf.int64),
     }
     features = tf.parse_single_example(record, keys_to_features)
-    image = tf.decode_raw(features['data'], tf.uint8)
+    image = tf.decode_raw(features['data'], tf.uint8)    # 保存时是uint8所以这必须是uint8(位数必须一样否则报错)
     image = tf.reshape(image, [100, 100, 3])
     image = tf.cast(image, tf.float32)
-    #img_centered = tf.subtract(image, IMAGENET_MEAN)
+    img_centered = tf.subtract(image, IMAGENET_MEAN)
     # 在这里可以对图像进行处理（现在我们暂且不处理）
-    visit = tf.decode_raw(features['visit'], tf.float64)
+    visit = tf.decode_raw(features['visit'], tf.int64)   # 保存时是int64所以这必须是64位
     visit = tf.reshape(visit, [182, 24])
+    visit = tf.cast(visit, tf.float32)
     # 可以在这里改变visit特征的形状使用tf.reshape()
     label = tf.cast(features['label'], tf.int64)
-    return image, visit, label
+    label_onehot = tf.one_hot(label, NUM_CLASSES)
+    return img_centered, visit, label_onehot
 
 #########生成feature方法##########
 class DataGenerator(object):
@@ -198,10 +201,11 @@ class DataGenerator(object):
 #train_lenth = len([x for x in tf.python_io.tf_record_iterator(tfrecord_dir + "train.tfrecord")])
 #eval_lenth = len([x for x in tf.python_io.tf_record_iterator(tfrecord_dir + "eval.tfrecord")])
 #i = 0
-DataGenerator = DataGenerator()
-dataset = DataGenerator.get_batch(10, tag="training")
-iterator = dataset.make_one_shot_iterator()
-next_element = iterator.get_next()
-with tf.Session() as sess:
-    image, visit, label = sess.run(next_element)
-    i == value
+#DataGenerator = DataGenerator()
+#dataset = DataGenerator.get_batch(10, tag="training")
+#iterator = dataset.make_one_shot_iterator()
+#next_element = iterator.get_next()
+#with tf.Session() as sess:
+#    image, visit, label = sess.run(next_element)
+ #   i == value
+#VisitGenerator.GetStatisticDataArray1FromVisit(txt_dir + "eval.txt", train_visit_dir, "zhenjie.mat")

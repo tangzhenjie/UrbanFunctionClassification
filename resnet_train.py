@@ -94,9 +94,9 @@ with tf.Session(config=config) as sess:
 
     # 训练过程
     print("training start")
+    sess.run(training_init_op)
     train_batches_of_epoch = int(math.ceil(trainset_length/BATCHSIZE))
     for epoch in range(EPOCHS):
-        sess.run(training_init_op)
         print("{} Epoch number: {}".format(datetime.datetime.now(), epoch + 1))
         step = 1
         while step <= train_batches_of_epoch:
