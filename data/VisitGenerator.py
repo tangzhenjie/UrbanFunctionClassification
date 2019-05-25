@@ -15,7 +15,7 @@ for element in days_array:
     key = element._short_repr.replace("-", "")
     date_dict[key] = tag
     tag = tag + 1
-def GetStatisticDataArray1FromVisit(train_or_eval_txt_path=None, visit_dataset_dir=None, mat_save_path=""):
+def GetStatisticDataArray1FromVisit(train_or_eval_txt_path=None, visit_dataset_dir=None, mat_save_path="", tag="train", ):
     """
     example:
      train_or_eval_txt_path = "D:\\pycharm_program\\UrbanFunctionClassification\\data\\train_all.txt"
@@ -28,8 +28,12 @@ def GetStatisticDataArray1FromVisit(train_or_eval_txt_path=None, visit_dataset_d
         lines = f.readlines()
         for line in lines:
             # 获取文件中的文件名
-            visit_file_name = line.split("\t")[0].split("\\")[1].split(".")[0]  # !!!!!!!注意不同系统上的\斜线不同
-            visit_file_path = visit_dataset_dir + visit_file_name + ".txt"
+            if tag == "train":
+                visit_file_name = line.split("\t")[0].split("\\")[1].split(".")[0]  # !!!!!!!注意不同系统上的\斜线不同
+                visit_file_path = visit_dataset_dir + visit_file_name + ".txt"
+            elif tag == "test":
+                visit_file_name = line.split("\t")[0].split(".")[0]  # !!!!!!!注意不同系统上的\斜线不同
+                visit_file_path = visit_dataset_dir + visit_file_name + ".txt"
             if os.path.exists(visit_file_path):
                 # 如果存在就执行下面的语句
                 with open(visit_file_path, "r") as F:

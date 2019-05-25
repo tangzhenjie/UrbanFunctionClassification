@@ -1,4 +1,4 @@
-from data.DataGenerator import ImageDataGenerator
+from data import DataGeneratorNew
 from core import ResNet
 
 import tensorflow as tf
@@ -10,17 +10,19 @@ DATASET_DIR = "D:\\competition\\data\\test_img\\test"
 CHECKPOINT_DIR = 'D:\\pycharm_program\\UrbanFunctionClassification\\checkpoint'
 NUM_CLASSES = 9
 BATCHSIZE = 1
-
+def tool(AreaID):
+    last = 6 - len(AreaID)
+    for key in range(last):
+        AreaID  = "0" + AreaID
+    return AreaID
 
 ##################### get the input pipline ############################
 with tf.name_scope("input"):
-    DataGenerator = ImageDataGenerator(DATASET_DIR, mode="testing")
+    DataGenerator = DataGeneratorNew.DataGenerator()
+    TestDataset = DataGenerator.get_batch(BATCHSIZE, tag="testing")
     # get the dataset statistics
-    test_set_length = DataGenerator.test_set_length
+    test_set_length = 10000
     print("test_set_length:%d" % test_set_length)
-
-
-    TestDataset = DataGenerator.getBatchData(type="testing", batch_size=BATCHSIZE)
 
     iterator = TestDataset.make_one_shot_iterator()
     next_batch = iterator.get_next()
@@ -60,12 +62,12 @@ with tf.Session() as sess:
     test_batches_of_epoch = int(math.ceil(test_set_length/BATCHSIZE))
     result = []
     for step in range(test_batches_of_epoch):
-        img_batch, AreaID_batch = sess.run(next_batch)
+        img_batch, visit, AreaID_batch = sess.run(next_batch)
         classIDs = sess.run(pre, feed_dict={x: img_batch, is_training: False})
         classID = (classIDs[0] + 1)
-        print(AreaID_batch[0].decode('UTF-8'))
+        print("AreaID %d" % AreaID_batch[0])
         print(classID)
-        dict_result = {"AreaID": AreaID_batch[0].decode('UTF-8'), "classID": "00" + str(classID)}
+        dict_result = {"AreaID": tool(str(AreaID_batch[0])), "classID": "00" + str(classID)}
         result.append(dict_result)
     with open(result_txt_file, "w") as f:
         for item in result:
