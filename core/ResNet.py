@@ -34,7 +34,7 @@ class ResNetModel(object):
             raise ValueError('Depth is not supported; it must be 50, 101 or 152')
 
 
-    def inference(self, x):
+    def inference(self, x, visit):
         # Scale 1
         with tf.variable_scope('scale1'):
             s1_conv = conv(x, ksize=7, stride=2, filters_out=64)
@@ -60,9 +60,17 @@ class ResNetModel(object):
 
         # post-net
         avg_pool = tf.reduce_mean(s5, reduction_indices=[1, 2], name='avg_pool')
+        with tf.variable_scope('visit_avg_pool'):
+            # 拼接上visit数据
+            visit = tf.reshape(visit, [-1, 182, 2, 12])
+            visit = tf.reduce_mean(visit, reduction_indices=[3], name='visit_pool')
+            visit = tf.reshape(visit, [-1, 364])
+            # 对visit进行归一化
+            # 拼接上avg_pool
+            visit_avg_pool = tf.concat([visit, avg_pool], 1,  name='visit_avg_pool')
 
         with tf.variable_scope('fc'):
-            self.prob = fc(avg_pool, num_units_out=self.num_classes)
+            self.prob = fc(visit_avg_pool, num_units_out=self.num_classes)
 
         return self.prob
 

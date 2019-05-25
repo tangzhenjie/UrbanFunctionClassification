@@ -51,12 +51,13 @@ validation_init_op = iterator.make_initializer(EvalDataset)
 ##################### setup the network ################################
 x = tf.placeholder(tf.float32, shape=(None, 100, 100, 3))
 y = tf.placeholder(tf.int32, shape=(None, NUM_CLASSES))
+visit = tf.placeholder(tf.float32, shape=(None, 182, 24))
 is_training = tf.placeholder('bool', [])
 
 with tf.name_scope("ResNet"):
     depth = 50    # 可以是50、101、152
     ResNetModel = ResNet.ResNetModel(is_training, depth, NUM_CLASSES)
-    net_output = ResNetModel.inference(x)
+    net_output = ResNetModel.inference(x, visit)
 
 # 训练操作
 with tf.name_scope("train"):
@@ -80,7 +81,7 @@ with tf.Session(config=config) as sess:
     sess.run(tf.global_variables_initializer())
 
     # 获取预训练的权重
-    #ResNetModel.load_original_weights(weight_path=weight_path, session=sess)
+    ResNetModel.load_original_weights(weight_path=weight_path, session=sess)
     # 判断有没有checkpoint
     saver = tf.train.Saver()
     ckpt = tf.train.get_checkpoint_state(CHECKPOINT_DIR)
@@ -100,8 +101,8 @@ with tf.Session(config=config) as sess:
         print("{} Epoch number: {}".format(datetime.datetime.now(), epoch + 1))
         step = 1
         while step <= train_batches_of_epoch:
-            img_batch, visit, label_batch = sess.run(next_batch)
-            pre, true, _, loss_value, merge, accu = sess.run([tf.argmax(net_output, 1), tf.argmax(y, 1), train_op, loss, summary_op, accuracy], feed_dict={x: img_batch, y: label_batch, is_training: True})
+            img_batch, visit_batch, label_batch = sess.run(next_batch)
+            pre, true, _, loss_value, merge, accu = sess.run([tf.argmax(net_output, 1), tf.argmax(y, 1), train_op, loss, summary_op, accuracy], feed_dict={x: img_batch, y: label_batch, is_training: True, visit: visit_batch})
             print("{} {} loss = {:.4f}".format(datetime.datetime.now(), step, loss_value))
             print("accuracy{}".format(accu))
             print(pre)
@@ -122,8 +123,8 @@ with tf.Session(config=config) as sess:
         sess.run(validation_init_op)
         con_mat = np.ones((NUM_CLASSES, NUM_CLASSES), dtype=np.int32)
         for tag in range(eval_batches_of_epoch):
-            img_batch, visit, label_batch = sess.run(next_batch)
-            pre, true, acc, con_matrix = sess.run([tf.argmax(net_output, 1), tf.argmax(y, 1), accuracy,  confus_matrix], feed_dict={x: img_batch, y: label_batch, is_training: False})
+            img_batch, visit_batch, label_batch = sess.run(next_batch)
+            pre, true, acc, con_matrix = sess.run([tf.argmax(net_output, 1), tf.argmax(y, 1), accuracy,  confus_matrix], feed_dict={x: img_batch, y: label_batch, is_training: False, visit: visit_batch})
             con_mat = con_mat + con_matrix
             test_acc += acc
             test_count += 1
