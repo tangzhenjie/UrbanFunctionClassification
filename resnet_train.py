@@ -20,9 +20,13 @@ weight_path = "D:\\pycharm_program\\UrbanFunctionClassification\\resnet_first_wi
 
 def get_loss(output_concat, onehot):
     with tf.name_scope("loss"):
+        # 由于样本不均衡我们添加上class权重
+        class_weight = tf.constant([[0.238, 0.188, 0.090, 0.034, 0.087, 0.138, 0.088, 0.065, 0.072]], dtype=tf.float32)
+        weight_per_label = tf.transpose(tf.matmul(tf.cast(onehot, tf.float32), tf.transpose(class_weight)))  # shape [1, batch_size]
+        xent = tf.multiply(weight_per_label, tf.nn.softmax_cross_entropy_with_logits(logits=output_concat, labels=onehot))  # shape [1, batch_size]
         # cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=y_predict, labels=batch_y)
-        cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits=output_concat, labels=onehot)
-        cross_entropy_mean = tf.reduce_mean(cross_entropy)
+        #cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits=output_concat, labels=onehot)
+        cross_entropy_mean = tf.reduce_mean(xent)
         regularization_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         loss = tf.add_n([cross_entropy_mean] + regularization_losses)
         tf.summary.scalar('train_loss', loss)
