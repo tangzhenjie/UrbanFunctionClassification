@@ -13,9 +13,9 @@ LOG_DIR = 'D:\\pycharm_program\\UrbanFunctionClassification\\log\\'
 DATASET_DIR = "D:\\competition\\data\\train_img\\train\\"
 CHECKPOINT_DIR = 'D:\\pycharm_program\\UrbanFunctionClassification\\checkpoint\\'
 NUM_CLASSES = 9
-BATCHSIZE = 20
+BATCHSIZE = 100
 LEARNINT_RATE = 0.0001
-EPOCHS = 1
+EPOCHS = 10
 weight_path = "D:\\pycharm_program\\UrbanFunctionClassification\\resnet_first_wights\\"
 
 def get_loss(output_concat, onehot):
@@ -83,6 +83,14 @@ with tf.Session(config=config) as sess:
     # 获取预训练的权重
     ResNetModel.load_original_weights(weight_path=weight_path, session=sess)
     # 判断有没有checkpoint
+    # 第一次执行恢复部分训练好的变量
+    restore_v1 = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="scale1")
+    restore_v2 = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="scale2")
+    restore_v3 = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="scale3")
+    restore_v4 = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="scale4")
+    restore_v5 = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="scale5")
+    restore_v = restore_v1 + restore_v2 + restore_v3 + restore_v4 + restore_v5
+
     saver = tf.train.Saver()
     ckpt = tf.train.get_checkpoint_state(CHECKPOINT_DIR)
     if ckpt and ckpt.model_checkpoint_path:
@@ -95,9 +103,9 @@ with tf.Session(config=config) as sess:
 
     # 训练过程
     print("training start")
-    sess.run(training_init_op)
     train_batches_of_epoch = int(math.ceil(trainset_length/BATCHSIZE))
     for epoch in range(EPOCHS):
+        sess.run(training_init_op)
         print("{} Epoch number: {}".format(datetime.datetime.now(), epoch + 1))
         step = 1
         while step <= train_batches_of_epoch:

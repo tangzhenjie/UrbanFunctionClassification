@@ -1,5 +1,5 @@
 # 从2018年10月1日到2019年3月31日一共182天
-# 准备从文件每个文件中提取：第一个数组[182,24]含义是;在这183*24=4392个小时，每个小时内到访该地区的人数
+# 准备从文件每个文件中提取：第一个数组[182,24]含义是;在这182*24=4368个小时，每个小时内到访该地区的人次数
 #                          第二个数组[4368]  含义是：每个维度表示每个人出现次数的人的个数，例如第1维数值表示
 #                          半年内到访该地区一次的人数。
 # (这里我们就不存储类别了因为与图片类别相同)
@@ -15,7 +15,7 @@ for element in days_array:
     key = element._short_repr.replace("-", "")
     date_dict[key] = tag
     tag = tag + 1
-def GetStatisticDataArray1FromVisit(train_or_eval_txt_path=None, visit_dataset_dir=None, mat_save_path="", tag="train", ):
+def GetStatisticDataArray1FromVisit(train_or_eval_txt_path=None, visit_dataset_dir=None, mat_save_path="", tag="train"):
     """
     example:
      train_or_eval_txt_path = "D:\\pycharm_program\\UrbanFunctionClassification\\data\\train_all.txt"
@@ -55,7 +55,7 @@ def GetStatisticDataArray1FromVisit(train_or_eval_txt_path=None, visit_dataset_d
             else:
                 raise ValueError("Invalid filename '%s'." % (visit_file_path))
         io.savemat(mat_save_path, RESULTS)
-def GetStatisticDataArray2FromVisit(train_or_eval_txt_path=None, visit_dataset_dir=None, mat_save_path=""):
+def GetStatisticDataArray2FromVisit(train_or_eval_txt_path=None, visit_dataset_dir=None, mat_save_path="", tag="train"):
     """
         example:
          train_or_eval_txt_path = "D:\\pycharm_program\\UrbanFunctionClassification\\data\\train_all.txt"
@@ -67,8 +67,12 @@ def GetStatisticDataArray2FromVisit(train_or_eval_txt_path=None, visit_dataset_d
         lines = f.readlines()
         for line in lines:
             # 获取文件中的文件名
-            visit_file_name = line.split("\t")[0].split("\\")[1].split(".")[0]  # !!!!!!!注意不同系统上的\斜线不同
-            visit_file_path = visit_dataset_dir + visit_file_name + ".txt"
+            if tag == "train":
+                visit_file_name = line.split("\t")[0].split("\\")[1].split(".")[0]  # !!!!!!!注意不同系统上的\斜线不同
+                visit_file_path = visit_dataset_dir + visit_file_name + ".txt"
+            elif tag == "test":
+                visit_file_name = line.split("\t")[0].split(".")[0]  # !!!!!!!注意不同系统上的\斜线不同
+                visit_file_path = visit_dataset_dir + visit_file_name + ".txt"
             if os.path.exists(visit_file_path):
                 # 如果存在就执行下面的语句
                 with open(visit_file_path, "r") as F:
@@ -94,7 +98,7 @@ def GetStatisticDataArray2FromVisit(train_or_eval_txt_path=None, visit_dataset_d
                 raise ValueError("Invalid filename '%s'." % (visit_file_path))
         io.savemat(mat_save_path, RESULTS)
 
-def GetStatisticDataArray12FromVisit(train_or_eval_txt_path=None, visit_dataset_dir=None, mat_save_path=""):
+def GetStatisticDataArray12FromVisit(train_or_eval_txt_path=None, visit_dataset_dir=None, mat_save_path="", tag="train"):
     """
             example:
              train_or_eval_txt_path = "D:\\pycharm_program\\UrbanFunctionClassification\\data\\train_all.txt"
@@ -106,8 +110,12 @@ def GetStatisticDataArray12FromVisit(train_or_eval_txt_path=None, visit_dataset_
         lines = f.readlines()
         for line in lines:
             # 获取文件中的文件名
-            visit_file_name = line.split("\t")[0].split("\\")[1].split(".")[0]  # !!!!!!!注意不同系统上的\斜线不同
-            visit_file_path = visit_dataset_dir + visit_file_name + ".txt"
+            if tag == "train":
+                visit_file_name = line.split("\t")[0].split("\\")[1].split(".")[0]  # !!!!!!!注意不同系统上的\斜线不同
+                visit_file_path = visit_dataset_dir + visit_file_name + ".txt"
+            elif tag == "test":
+                visit_file_name = line.split("\t")[0].split(".")[0]  # !!!!!!!注意不同系统上的\斜线不同
+                visit_file_path = visit_dataset_dir + visit_file_name + ".txt"
             if os.path.exists(visit_file_path):
                 # 如果存在就执行下面的语句
                 with open(visit_file_path, "r") as F:
@@ -146,9 +154,23 @@ def GetStatisticDataArray12FromVisit(train_or_eval_txt_path=None, visit_dataset_
 
 #GetVisitDateByTrainOrEvalText()
 
-#data = io.loadmat("D:\\pycharm_program\\UrbanFunctionClassification\\visit_mat_dataset\\eval.mat")
+
+"""
+data = io.loadmat("D:\\pycharm_program\\visit_static\\train_array2.mat")
+result = []
+i = 0
+for (k,v) in data.items():
+    if i < 3:
+        i = i + 1
+        continue
+    result.append(v[0])
+
+io.savemat("D:\\pycharm_program\\visit_static\\train_array2nokey.mat", {"feature": result})
+"""
+
 
 #x = data.keys()
 #x1 = x[0][0]
 #x2 = x[0][1]
 #i = 0
+#GetStatisticDataArray2FromVisit(train_or_eval_txt_path="D:\\pycharm_program\\UrbanFunctionClassification\\Dataset\\test.txt", visit_dataset_dir="D:\\pycharm_program\\UrbanFunctionClassification\\Dataset\\test_visit\\test\\", mat_save_path="D:\\pycharm_program\\visit_static\\test_array2.mat", tag="test")

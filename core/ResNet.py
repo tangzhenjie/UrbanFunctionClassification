@@ -62,12 +62,14 @@ class ResNetModel(object):
         avg_pool = tf.reduce_mean(s5, reduction_indices=[1, 2], name='avg_pool')
         with tf.variable_scope('visit_avg_pool'):
             # 拼接上visit数据
-            visit = tf.reshape(visit, [-1, 182, 2, 12])
+            visit = tf.reshape(visit, [-1, 182, 12, 2])
             visit = tf.reduce_mean(visit, reduction_indices=[3], name='visit_pool')
-            visit = tf.reshape(visit, [-1, 364])
+            visit = tf.reshape(visit, [-1, 2184])
+            avg_pool = tf.pad(avg_pool, paddings=[[0, 0], [0,136]])
             # 对visit进行归一化
             # 拼接上avg_pool
-            visit_avg_pool = tf.concat([visit, avg_pool], 1,  name='visit_avg_pool')
+            #visit_avg_pool = tf.concat([visit, avg_pool], 1,  name='visit_avg_pool')
+            visit_avg_pool = tf.add(visit, avg_pool)
 
         with tf.variable_scope('fc'):
             self.prob = fc(visit_avg_pool, num_units_out=self.num_classes)
