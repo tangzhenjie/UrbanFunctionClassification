@@ -34,7 +34,7 @@ class ResNetModel(object):
             raise ValueError('Depth is not supported; it must be 50, 101 or 152')
 
 
-    def inference(self, x, visit):
+    def inference(self, x):
         # Scale 1
         with tf.variable_scope('scale1'):
             s1_conv = conv(x, ksize=7, stride=2, filters_out=64)
@@ -60,21 +60,24 @@ class ResNetModel(object):
 
         # post-net
         avg_pool = tf.reduce_mean(s5, reduction_indices=[1, 2], name='avg_pool')
+        """
         with tf.variable_scope('visit_avg_pool'):
             # 拼接上visit数据
-            visit = tf.reshape(visit, [-1, 182, 12, 2])
-            visit = tf.reduce_mean(visit, reduction_indices=[3], name='visit_pool')
-            visit = tf.reshape(visit, [-1, 2184])
-            avg_pool = tf.pad(avg_pool, paddings=[[0, 0], [0,136]])
+            #visit = tf.reshape(visit, [-1, 182, 12, 2])
+            #visit = tf.reduce_mean(visit, reduction_indices=[3], name='visit_pool')
+            visit = tf.reshape(visit, [-1, 4368])
+            #avg_pool = tf.pad(avg_pool, paddings=[[0, 0], [0,136]])
             # 对visit进行归一化
             # 拼接上avg_pool
-            #visit_avg_pool = tf.concat([visit, avg_pool], 1,  name='visit_avg_pool')
-            visit_avg_pool = tf.add(visit, avg_pool)
+            visit_avg_pool = tf.concat([visit, avg_pool], 1,  name='visit_avg_pool')
+            #visit_avg_pool = tf.add(visit, avg_pool)
 
         with tf.variable_scope('fc'):
             self.prob = fc(visit_avg_pool, num_units_out=self.num_classes)
+        """
 
-        return self.prob
+
+        return avg_pool
 
     def loss(self, batch_x, batch_y=None):
         y_predict = self.inference(batch_x)
@@ -219,3 +222,45 @@ def contains(target_str, search_arr):
             break
 
     return rv
+
+
+def visit_network(visit, is_training):
+    # visit shape[182, 192, 1]
+    # 对visit数据进行转换
+    # Scale 1
+    with tf.variable_scope('scale1'):
+        s1_conv = conv(visit, ksize=7, stride=2, filters_out=64)
+        s1_bn = bn(s1_conv, is_training=is_training)
+        s1 = tf.nn.relu(s1_bn)
+
+    # Scale 2
+    with tf.variable_scope('scale2'):
+        s2_mp = tf.nn.max_pool(s1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME')
+        s2 = stack(s2_mp, is_training=is_training, num_blocks=2, stack_stride=1,
+                   block_filters_internal=32)
+
+    # Scale 3
+    with tf.variable_scope('scale3'):
+        s3 = stack(s2, is_training=is_training, num_blocks=3, stack_stride=2,
+                   block_filters_internal=64)
+
+    # Scale 4
+    with tf.variable_scope('scale4'):
+        s4 = stack(s3, is_training=is_training, num_blocks=3, stack_stride=2,
+                   block_filters_internal=182)
+
+    # Scale 5
+    with tf.variable_scope('scale5'):
+        s5 = stack(s4, is_training=is_training, num_blocks=2, stack_stride=2,
+                   block_filters_internal=256)
+
+    # post-net
+    avg_pool = tf.reduce_mean(s5, reduction_indices=[1, 2], name='avg_pool')
+
+
+    return avg_pool
+
+def get_net_output(fc_image, fc_visit, classNum):
+    visit_image_concat = tf.concat([fc_image, fc_visit], 1, name='visit_image_concat')
+    net_output = fc(visit_image_concat, num_units_out=classNum)
+    return net_output

@@ -15,7 +15,7 @@ CHECKPOINT_DIR = 'D:\\pycharm_program\\UrbanFunctionClassification\\checkpoint\\
 NUM_CLASSES = 9
 BATCHSIZE = 100
 LEARNINT_RATE = 0.0001
-EPOCHS = 10
+EPOCHS = 40
 weight_path = "D:\\pycharm_program\\UrbanFunctionClassification\\resnet_first_wights\\"
 
 def get_loss(output_concat, onehot):
@@ -55,18 +55,23 @@ validation_init_op = iterator.make_initializer(EvalDataset)
 ##################### setup the network ################################
 x = tf.placeholder(tf.float32, shape=(None, 100, 100, 3))
 y = tf.placeholder(tf.int32, shape=(None, NUM_CLASSES))
-visit = tf.placeholder(tf.float32, shape=(None, 182, 24))
+visit = tf.placeholder(tf.float32, shape=(None, 182, 192, 1))
 is_training = tf.placeholder('bool', [])
 
+
+depth = 50    # 可以是50、101、152
+ResNetModel = ResNet.ResNetModel(is_training, depth, NUM_CLASSES)
 with tf.name_scope("ResNet"):
-    depth = 50    # 可以是50、101、152
-    ResNetModel = ResNet.ResNetModel(is_training, depth, NUM_CLASSES)
-    net_output = ResNetModel.inference(x, visit)
+    fc_image = ResNetModel.inference(x)
+with tf.variable_scope("visit"):
+    fc_visit = ResNet.visit_network(visit, is_training)
+net_output = ResNet.get_net_output(fc_image=fc_image, fc_visit=fc_visit, classNum=NUM_CLASSES)
+
 
 # 训练操作
 with tf.name_scope("train"):
     loss = get_loss(net_output, y)
-    train_layers = ["fc"]
+    train_layers = ["scale5", "fc"]
     train_op = ResNetModel.optimize(loss=loss, learning_rate=LEARNINT_RATE, train_layers=train_layers)
 # 评价操作
 with tf.name_scope("eval"):
@@ -85,15 +90,8 @@ with tf.Session(config=config) as sess:
     sess.run(tf.global_variables_initializer())
 
     # 获取预训练的权重
-    ResNetModel.load_original_weights(weight_path=weight_path, session=sess)
+    #ResNetModel.load_original_weights(weight_path=weight_path, session=sess)
     # 判断有没有checkpoint
-    # 第一次执行恢复部分训练好的变量
-    restore_v1 = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="scale1")
-    restore_v2 = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="scale2")
-    restore_v3 = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="scale3")
-    restore_v4 = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="scale4")
-    restore_v5 = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="scale5")
-    restore_v = restore_v1 + restore_v2 + restore_v3 + restore_v4 + restore_v5
 
     saver = tf.train.Saver()
     ckpt = tf.train.get_checkpoint_state(CHECKPOINT_DIR)
@@ -114,6 +112,8 @@ with tf.Session(config=config) as sess:
         step = 1
         while step <= train_batches_of_epoch:
             img_batch, visit_batch, label_batch = sess.run(next_batch)
+            visit_batch = np.tile(visit_batch, (1, 1, 8))
+            visit_batch = np.reshape(visit_batch, (BATCHSIZE, 182, 192, 1))
             pre, true, _, loss_value, merge, accu = sess.run([tf.argmax(net_output, 1), tf.argmax(y, 1), train_op, loss, summary_op, accuracy], feed_dict={x: img_batch, y: label_batch, is_training: True, visit: visit_batch})
             print("{} {} loss = {:.4f}".format(datetime.datetime.now(), step, loss_value))
             print("accuracy{}".format(accu))

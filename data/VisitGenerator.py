@@ -48,7 +48,7 @@ def GetStatisticDataArray1FromVisit(train_or_eval_txt_path=None, visit_dataset_d
                             array1_first_index = date_dict[yearmonthday]
                             array1_second_indexs = hours.split("|")
                             for second_index in array1_second_indexs:
-                                second_index_true = int(second_index) - 1
+                                second_index_true = int(second_index)
                                 array1[array1_first_index][second_index_true] = array1[array1_first_index][second_index_true] + 1
                     # 然后把element放到最后的结果中结果形式为{"文件名字"：element}
                     RESULTS[visit_file_name] = array1
@@ -134,7 +134,7 @@ def GetStatisticDataArray12FromVisit(train_or_eval_txt_path=None, visit_dataset_
                             array1_second_indexs = hours.split("|")
                             array2_index = array2_index + len(array1_second_indexs)
                             for second_index in array1_second_indexs:
-                                second_index_true = int(second_index) - 1
+                                second_index_true = int(second_index)
                                 array1[array1_first_index][second_index_true] = array1[array1_first_index][second_index_true] + 1
                         if array2_index == -1:
                             continue
@@ -155,15 +155,17 @@ def GetStatisticDataArray12FromVisit(train_or_eval_txt_path=None, visit_dataset_
 #GetVisitDateByTrainOrEvalText()
 
 
+
+
 """
-data = io.loadmat("D:\\pycharm_program\\visit_static\\train_array2.mat")
+data = io.loadmat("D:\\pycharm_program\\visit_static\\eval_array1.mat")
 result = []
 i = 0
 for (k,v) in data.items():
     if i < 3:
         i = i + 1
         continue
-    result.append(v[0])
+    result.append(np.reshape(v, 4368))
 
 io.savemat("D:\\pycharm_program\\visit_static\\train_array2nokey.mat", {"feature": result})
 """
@@ -173,4 +175,4 @@ io.savemat("D:\\pycharm_program\\visit_static\\train_array2nokey.mat", {"feature
 #x1 = x[0][0]
 #x2 = x[0][1]
 #i = 0
-#GetStatisticDataArray2FromVisit(train_or_eval_txt_path="D:\\pycharm_program\\UrbanFunctionClassification\\Dataset\\test.txt", visit_dataset_dir="D:\\pycharm_program\\UrbanFunctionClassification\\Dataset\\test_visit\\test\\", mat_save_path="D:\\pycharm_program\\visit_static\\test_array2.mat", tag="test")
+#GetStatisticDataArray1FromVisit(train_or_eval_txt_path="D:\\pycharm_program\\UrbanFunctionClassification\\Dataset\\test.txt", visit_dataset_dir="D:\\pycharm_program\\UrbanFunctionClassification\\Dataset\\test_visit\\test\\", mat_save_path="D:\\pycharm_program\\visit_static\\test_array1.mat", tag="test")
