@@ -229,38 +229,35 @@ def visit_network(visit, is_training):
     # 对visit数据进行转换
     # Scale 1
     with tf.variable_scope('visit_scale1'):
-        s1_bn = bn(visit, is_training=is_training)
-        s1_conv = conv(s1_bn, ksize=3, stride=1, filters_out=32)
-        s1 = tf.nn.relu(s1_conv)
+        s1_conv = conv(visit, ksize=3, stride=1, filters_out=32)
+        s1_bn = bn(s1_conv, is_training=is_training)
+        s1 = tf.nn.relu(s1_bn)
 
     # Scale 2
     with tf.variable_scope('visit_scale2'):
         s2_mp = tf.nn.max_pool(s1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
-        s2_bn = bn(s2_mp, is_training=is_training)
-        s2_conv = conv(s2_bn, ksize=3, stride=1, filters_out=64)
-        s2 = tf.nn.relu(s2_conv)
+        s2_conv = conv(s2_mp, ksize=3, stride=1, filters_out=64)
+        s2_bn = bn(s2_conv, is_training=is_training)
+        s2 = tf.nn.relu(s2_bn)
 
     # Scale 3
     with tf.variable_scope('visit_scale3'):
         s3_mp = tf.nn.max_pool(s2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
-        s3_bn = bn(s3_mp, is_training=is_training)
-        s3_conv = conv(s3_bn, ksize=3, stride=1, filters_out=128)
-        s3 = tf.nn.relu(s3_conv)
+        s3_conv = conv(s3_mp, ksize=3, stride=1, filters_out=128)
+        s3_bn = bn(s3_conv, is_training=is_training)
+        s3 = tf.nn.relu(s3_bn)
 
     s4_mp = tf.nn.max_pool(s3, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
     # post-net
     avg_pool = tf.reduce_mean(s4_mp, reduction_indices=[1, 2], name='avg_pool2')
     # Scale 5
     with tf.variable_scope('visit_fc'):
-        s5 = fc(avg_pool, num_units_out=2048)
+        s5 = fc(avg_pool, num_units_out=1024)
 
     return s5
+
 def get_net_output(fc_image, fc_visit, classNum):
     with tf.variable_scope("fc"):
-        """
-         visit_image_concat = tf.concat([fc_image, fc_visit], 1, name='visit_image_concat')
+        visit_image_concat = tf.concat([fc_image, fc_visit], 1, name='visit_image_concat')
         net_output = fc(visit_image_concat, num_units_out=classNum)
-        """
-        visit_image_add = tf.add(fc_image, fc_visit)
-        net_output = fc(visit_image_add, num_units_out=classNum)
     return net_output

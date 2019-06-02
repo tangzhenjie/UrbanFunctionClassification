@@ -27,11 +27,12 @@ def _float_feature(value):
 
 def _int64_feature(value):
   return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
-def _datas_to_tfexample(data, visit, label):
+def _datas_to_tfexample(data, visit_array1, visit_array2, label):
 
     return tf.train.Example(features=tf.train.Features(feature={
         'data': _bytes_feature(data),
-        'visit': _bytes_feature(visit),
+        'visit_array1': _bytes_feature(visit_array1),
+        'visit_array2': _bytes_feature(visit_array2),
         'label': _int64_feature(label),
         }))
 def _tf_record_parser(record):
@@ -178,7 +179,9 @@ class DataGenerator(object):
                     image = cv2.imread(image_path, cv2.IMREAD_COLOR)
                     label = int(items[1][0]) - 1
                     visit = visits[key]
-                    result.append([image, visit, label])
+                    visit_array1 = visit[0][0]
+                    visit_array2 = visit[0][1]
+                    result.append([image, visit_array1, visit_array2, label])
 
             permutation = np.random.permutation(len(result))
             result_shuffled = []
@@ -196,7 +199,9 @@ class DataGenerator(object):
                     image = cv2.imread(image_path, cv2.IMREAD_COLOR)
                     label = int(items[1][0]) - 1
                     visit = visits[key]
-                    result.append([image, visit, label])
+                    visit_array1 = visit[0][0]
+                    visit_array2 = visit[0][1]
+                    result.append([image, visit_array1, visit_array2, label])
             result_shuffled = result
 
         elif tag == "testing":
@@ -210,7 +215,9 @@ class DataGenerator(object):
                     image = cv2.imread(image_path, cv2.IMREAD_COLOR)
                     label = int(items[1].split("\n")[0])
                     visit = visits[key]
-                    result.append([image, visit, label])
+                    visit_array1 = visit[0][0]
+                    visit_array2 = visit[0][1]
+                    result.append([image, visit_array1, visit_array2, label])
             result_shuffled = result
         # 测试集后期写
         return result_shuffled
@@ -227,10 +234,11 @@ class DataGenerator(object):
         length = len(data)
         for index, item in enumerate(data):
             image_data = item[0].tobytes()
-            visit = item[1].tobytes()
-            label = item[2]
+            visit_array1 = item[1].tobytes()
+            visit_array2 = item[2].tobytes()
+            label = item[3]
             # 生成example
-            example = _datas_to_tfexample(image_data, visit, label)
+            example = _datas_to_tfexample(image_data, visit_array1, visit_array2, label)
             tfrecord_writer.write(example.SerializeToString())
             sys.stdout.write('\r>> Converting image %d/%d' % (index + 1, length))
             sys.stdout.flush()

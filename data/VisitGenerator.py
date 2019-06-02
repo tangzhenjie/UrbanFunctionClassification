@@ -157,18 +157,22 @@ def GetStatisticDataArray12FromVisit(train_or_eval_txt_path=None, visit_dataset_
 
 
 
-"""
-data = io.loadmat("D:\\pycharm_program\\visit_static\\eval_array1.mat")
-result = []
+
+data1 = io.loadmat("D:\\pycharm_program\\visit_static\\test_array1.mat")
+data2 = io.loadmat("D:\\pycharm_program\\visit_static\\test_array2.mat")
+result = {}
 i = 0
-for (k,v) in data.items():
+for (k,v) in data1.items():
+    element = []
     if i < 3:
         i = i + 1
         continue
-    result.append(np.reshape(v, 4368))
+    element.append(v)
+    element.append(data2[k][0])
+    result[k] = element
 
-io.savemat("D:\\pycharm_program\\visit_static\\train_array2nokey.mat", {"feature": result})
-"""
+io.savemat("D:\\pycharm_program\\visit_static\\test_array12.mat",  result)
+
 
 
 #x = data.keys()

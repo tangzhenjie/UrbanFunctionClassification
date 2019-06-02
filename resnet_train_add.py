@@ -1,5 +1,5 @@
 from data import DataGeneratorNew
-from core import ResNet
+from core import ResNet_add
 
 import tensorflow as tf
 import datetime
@@ -8,16 +8,25 @@ import math
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 slim = tf.contrib.slim
-
-LOG_DIR = 'D:\\pycharm_program\\UrbanFunctionClassification\\log\\'
-DATASET_DIR = "D:\\competition\\data\\train_img\\train\\"
-CHECKPOINT_DIR = 'D:\\pycharm_program\\UrbanFunctionClassification\\checkpoint\\'
+LOG_DIR = './log/'
+CHECKPOINT_DIR = './checkpointadd/'
 NUM_CLASSES = 9
-BATCHSIZE = 100
-LEARNINT_RATE = 0.0001
-EPOCHS = 40
-weight_path = "D:\\pycharm_program\\UrbanFunctionClassification\\resnet_first_wights\\"
+BATCHSIZE = 200
+LEARNINT_RATE = 0.001
+EPOCHS = 100
+weight_path = "./resnet_first_wights/"
 
+"""
+def get_loss(output_concat, onehot):
+    with tf.name_scope("loss"):
+        # cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=y_predict, labels=batch_y)
+        cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits=output_concat, labels=onehot)
+        cross_entropy_mean = tf.reduce_mean(cross_entropy)
+        regularization_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+        loss = tf.add_n([cross_entropy_mean] + regularization_losses)
+        tf.summary.scalar('train_loss', loss)
+    return loss
+"""
 def get_loss(output_concat, onehot):
     with tf.name_scope("loss"):
         # 由于样本不均衡我们添加上class权重
@@ -45,7 +54,7 @@ print("train_set_length:%d" % trainset_length)
 print("eval_set_length:%d" % eval_set_length)
 
 
-iterator = tf.data.Iterator.from_structure(TrainDataset.output_types, TrainDataset.output_shapes)
+iterator = tf.contrib.data.Iterator.from_structure(TrainDataset.output_types, TrainDataset.output_shapes)
 next_batch = iterator.get_next()
 training_init_op = iterator.make_initializer(TrainDataset)
 validation_init_op = iterator.make_initializer(EvalDataset)
@@ -58,20 +67,18 @@ y = tf.placeholder(tf.int32, shape=(None, NUM_CLASSES))
 visit = tf.placeholder(tf.float32, shape=(None, 182, 192, 1))
 is_training = tf.placeholder('bool', [])
 
-
 depth = 50    # 可以是50、101、152
-ResNetModel = ResNet.ResNetModel(is_training, depth, NUM_CLASSES)
+ResNetModel = ResNet_add.ResNetModel(is_training, depth, NUM_CLASSES)
 with tf.name_scope("ResNet"):
     fc_image = ResNetModel.inference(x)
 with tf.name_scope("visit"):
-    fc_visit = ResNet.visit_network(visit, is_training)
-net_output = ResNet.get_net_output(fc_image=fc_image, fc_visit=fc_visit, classNum=NUM_CLASSES)
-
+    fc_visit = ResNet_add.visit_network(visit, is_training)
+net_output = ResNet_add.get_net_output(fc_image=fc_image, fc_visit=fc_visit, classNum=NUM_CLASSES)
 
 # 训练操作
 with tf.name_scope("train"):
     loss = get_loss(net_output, y)
-    train_layers = ["visit_scale1", "visit_scale2", "visit_scale3", "visit_scale4", "visit_scale5", "scale5", "fc"]
+    train_layers = ['visit_scale1',  'visit_scale2', 'visit_scale3', 'visit_fc', 'fc']
     train_op = ResNetModel.optimize(loss=loss, learning_rate=LEARNINT_RATE, train_layers=train_layers)
 # 评价操作
 with tf.name_scope("eval"):
@@ -84,6 +91,7 @@ confus_matrix = tf.confusion_matrix(tf.argmax(y, 1), tf.argmax(net_output, 1), n
 ##################### setup the network ################################
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
+#config=config
 with tf.Session(config=config) as sess:
     # initial variables
     sess.run(tf.local_variables_initializer())
@@ -92,7 +100,6 @@ with tf.Session(config=config) as sess:
     # 获取预训练的权重
     ResNetModel.load_original_weights(weight_path=weight_path, session=sess)
     # 判断有没有checkpoint
-
     saver = tf.train.Saver()
     ckpt = tf.train.get_checkpoint_state(CHECKPOINT_DIR)
     if ckpt and ckpt.model_checkpoint_path:
@@ -137,12 +144,12 @@ with tf.Session(config=config) as sess:
         for tag in range(eval_batches_of_epoch):
             img_batch, visit_batch, label_batch = sess.run(next_batch)
             visit_batch = np.tile(visit_batch, (1, 1, 8))
-            visit_batch = np.reshape(visit_batch, (BATCHSIZE, 182, 192, 1))
+            visit_batch = np.reshape(visit_batch, (-1, 182, 192, 1))
             pre, true, acc, con_matrix = sess.run([tf.argmax(net_output, 1), tf.argmax(y, 1), accuracy,  confus_matrix], feed_dict={x: img_batch, y: label_batch, is_training: False, visit: visit_batch})
             con_mat = con_mat + con_matrix
             test_acc += acc
             test_count += 1
-            print("the {} time Validation Accuracy = {:.4f}".format(tag, acc))
+            print("the {} time Validation Accuracy = {:.4f}".format(tag + 1, acc))
             print(pre)
             print(true)
             print(con_mat)
