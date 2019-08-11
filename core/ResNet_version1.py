@@ -224,13 +224,50 @@ def contains(target_str, search_arr):
     return rv
 
 
-def visit_network(visit):
-    # visit shape[174, 26]
-    # 对visit数据进行转换
-    visit_new = tf.reshape(visit, [-1, 4524])
-    with tf.variable_scope('visit_fc'):
-        s5 = fc(visit_new, num_units_out=1024)
-    return s5
+def visit_network(visit_array1, is_training):
+    #182, 192, 1
+    # Scale 1
+    visit_array1 = tf.reshape(visit_array1, [-1, 26, 7, 24])
+    with tf.variable_scope('scale1_visit'):
+        s1_conv = conv(visit_array1, ksize=3, stride=1, filters_out=16)
+        s1_bn = bn(s1_conv, is_training=is_training)
+        s1 = tf.nn.relu(s1_bn)
+
+    # Scale 2
+    with tf.variable_scope('scale2_visit'):
+        s2_mp = tf.nn.max_pool(s1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME')
+        s2 = stack(s2_mp, is_training=is_training, num_blocks=2, stack_stride=1,
+                   block_filters_internal=16)
+
+    # Scale 3
+    with tf.variable_scope('scale3_visit'):
+        s3 = stack(s2, is_training=is_training, num_blocks=3, stack_stride=2,
+                   block_filters_internal=32)
+
+    # Scale 4
+    with tf.variable_scope('scale4_visit'):
+        s4 = stack(s3, is_training=is_training, num_blocks=2, stack_stride=2,
+                   block_filters_internal=64)
+
+    # post-net
+    avg_pool = tf.reduce_mean(s4, reduction_indices=[1, 2], name='avg_pool1')
+    """
+    with tf.variable_scope('visit_avg_pool'):
+        # 拼接上visit数据
+        #visit = tf.reshape(visit, [-1, 182, 12, 2])
+        #visit = tf.reduce_mean(visit, reduction_indices=[3], name='visit_pool')
+        visit = tf.reshape(visit, [-1, 4368])
+        #avg_pool = tf.pad(avg_pool, paddings=[[0, 0], [0,136]])
+        # 对visit进行归一化
+        # 拼接上avg_pool
+        visit_avg_pool = tf.concat([visit, avg_pool], 1,  name='visit_avg_pool')
+        #visit_avg_pool = tf.add(visit, avg_pool)
+
+    with tf.variable_scope('fc'):
+        self.prob = fc(visit_avg_pool, num_units_out=self.num_classes)
+    """
+
+    return avg_pool
 def get_net_output(fc_image, fc_visit, classNum):
     with tf.variable_scope("fc"):
         """

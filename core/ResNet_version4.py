@@ -229,7 +229,7 @@ def visit_network(visit):
     # 对visit数据进行转换
     visit_new = tf.reshape(visit, [-1, 4524])
     with tf.variable_scope('visit_fc'):
-        s5 = fc(visit_new, num_units_out=1024)
+        s5 = fc(visit_new, num_units_out=512)
     return s5
 def get_net_output(fc_image, fc_visit, classNum):
     with tf.variable_scope("fc"):
